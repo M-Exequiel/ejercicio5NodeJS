@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ejercicio 5</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        input[type=number], select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            margin-top: 6px;
+            margin-bottom: 16px;
+            resize: vertical;
+        }
+
+        .formContainer {
+            border-radius: 5px;
+            background-color: #f2f2f2;
+            padding: 20px;
+        }
+
+        .form {
+            margin: 10px auto;
+            max-width: 400px;
+            padding: 20px 12px 10px 20px;
+            font: 13px "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+        }
+
+        input[type=submit] {
+            background: #4B99AD;
+            padding: 8px 15px 8px 15px;
+            border: none;
+            color: #fff;
+        }
+
+        input[type=submit]:hover {
+            background: #4691A4;
+            box-shadow: none;
+            -moz-box-shadow: none;
+            -webkit-box-shadow: none;
+        }
+
+        label {
+            margin: 0 0 3px 0;
+            padding: 0px;
+            display: block;
+            font-weight: bold;
+        }
+        .required{
+            color: red;
+        }
+
+        .imageMELI{
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+            margin-bottom: 10px;
+        }
+    </style>
+    <script>
+        var urlSites = "https://api.mercadolibre.com/sites";
+        var request = new XMLHttpRequest();
+        request.open('GET', urlSites, true);
+        request.onload = function () {
+            // Begin accessing JSON data here
+            var data = JSON.parse(this.response);
+            console.log(data);
+            if (request.status >= 200 && request.status < 400) {
+                for (var i=0;i<data.length;i++){
+                    var optionSite = document.createElement("OPTION");
+                    optionSite.value=data[i].id;
+                    optionSite.text = data[i].name;
+                    document.getElementById('countrySelect').appendChild(optionSite);
+                }
+            }
+        };
+        request.send();
+    </script>
+    <script>
+        function getCategorias(select) {
+            document.getElementById('categorySelect').innerText="";
+            var defaultOption = document.createElement('option');
+            defaultOption.text="Seleccione una categoria";
+            defaultOption.value="";
+            document.getElementById('categorySelect').appendChild(defaultOption);
+            idSiteSelected = select.options[select.selectedIndex].getAttribute("value");
+            var urlCategories = "https://api.mercadolibre.com/sites/" + idSiteSelected + "/categories";
+            console.log(urlCategories);
+            var request = new XMLHttpRequest();
+            request.open('GET', urlCategories, true);
+            request.onload = function () {
+                // Begin accessing JSON data here
+                var data = JSON.parse(this.response);
+                console.log(data);
+                if (request.status >= 200 && request.status < 400) {
+                    for (var i=0;i<data.length;i++){
+                        var optionSite = document.createElement("OPTION");
+                        optionSite.value=data[i].id;
+                        optionSite.text = data[i].name;
+                        document.getElementById('categorySelect').appendChild(optionSite);
+                    }
+                }else {
+                    alert("Ocurrio un error al cargar las categorias");
+                }
+            };
+            request.send();
+        }
+    </script>
+</head>
+<body>
+<img class="imageMELI" src="https://upload.wikimedia.org/wikipedia/commons/d/d4/MercadoLibre_logo.PNG">
+<div class="formContainer">
+    <form class="form" action="/trends" method="get">
+        <label for="countrySelect">Pais <span class="required">*</span></label>
+        <select id="countrySelect" name="country" onchange="getCategorias(this)">
+        </select>
+        <label for="categorySelect">Categoria (opcional) </label>
+        <select id="categorySelect" name="category">
+            <option value="">Seleccione una categoria</option>
+        </select>
+
+        <label for="columns">Cant. de columnas <span class="required">*</span></label>
+        <input type="number" id="columns" name="columns" placeholder="Cantidad de columnas.." max="5" min="3" value="3">
+        <br>
+        <label for="rows">Cant. de filas <span class="required">*</span></label>
+        <input type="number" id="rows" name="rows" placeholder="Cantidad de filas.." max="5" min="3" value="3">
+        <br>
+        <label>Mostrar nombres o imagenes <span class="required">*</span></label>
+        <select id="display" name="display">
+            <option value="nombre">Nombre</option>
+            <option value="imagen">Imagen</option>
+        </select>
+        <input type="submit" value="Enviar">
+    </form>
+
+</div>
+</body>
+</html>

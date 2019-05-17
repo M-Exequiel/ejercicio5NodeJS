@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ejercicio 5</title>
+    <style>
+        html, body {
+            height: 100%;
+        }
+
+        .cell, .pane {
+            position: absolute;
+            overflow: hidden;
+        }
+
+        .cell {
+            width: 20%;
+            height: 20%;
+        }
+
+        .pane {
+            width: 100%;
+            height: 100%;
+        }
+
+        .trend {
+            position: absolute;
+            top: 50%;
+            left: 0.5em;
+            right: 0.5em;
+            transform: translate(0, -0.5em);
+            display: block;
+            font: bold 1em/1 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            letter-spacing: -0.05em;
+            color: #fff;
+            text-shadow: 0 0.1em 0 rgba(0, 0, 0, 0.1);
+            text-decoration: none;
+        }
+    </style>
+    <script>
+        var query = window.location.search.substring(1);
+        console.log("query " + query);
+        var vars = query.split('&');
+        console.log("vars " + vars);
+        var infoParams = [];
+        var trendsArray = [];
+        var urlPictureCategory = "";
+        for (var i = 0; i < vars.length; i++) {
+            var pair = vars[i].split('=');
+            console.log("pair " + pair);
+            var valueParam = decodeURIComponent(pair[1]);
+            console.log("Value Param " + valueParam);
+            infoParams[i] = valueParam;
+        }
+        var idSitio = infoParams[0];
+        console.log("idSitio " + idSitio);
+        var idCategoria = infoParams[1];
+        console.log("idCategoria " + idCategoria);
+        var numCol = parseInt(infoParams[2]);
+        console.log("numCol " + numCol);
+        var numRow = parseInt(infoParams[3]);
+        console.log("numRow " + numRow);
+        var displayType = infoParams[4];
+        console.log("displayType " + displayType);
+        var urlCategorias = "https://api.mercadolibre.com/categories/" + idCategoria;
+        console.log("urlCategorias " + urlCategorias);
+        var urlTrends = "https://api.mercadolibre.com/trends/" + idSitio;
+        if (idCategoria != "") {
+            urlTrends = "https://api.mercadolibre.com/trends/" + idSitio + "/" + idCategoria;
+            if (displayType == "imagen") {
+                console.log("Se selecciono imagen");
+                var request = new XMLHttpRequest();
+                request.open('GET', urlCategorias, true);
+                request.onload = function () {
+                    // Begin accessing JSON data here
+                    var data = JSON.parse(this.response);
+                    urlPictureCategory = data.picture;
+                    console.log("Url picture " + data.picture);
+                };
+                request.send();
+            }
+        }
+        console.log("urlTrends " + urlTrends);
+        var request = new XMLHttpRequest();
+        request.open('GET', urlTrends, true);
+        request.onload = function () {
+            // Begin accessing JSON data here
+            var data = JSON.parse(this.response);
+            console.log("Datos tendencias " + data);
+            if (request.status >= 200 && request.status < 400) {
+                if (data == null) {
+                    trendsArray = [];
+                } else {
+                    for (var i = 0; i < data.length; i++) {
+                        trendsArray[i] = data[i];
+                        console.log("trendsArray " + trendsArray[i]);
+                    }
+                }
+            }
+        };
+        request.send();
+    </script>
+</head>
+<body>
+<script>
+    //DISPLAY TRENDS
+    var container = document.body;
+
+    // slide options
+    var slideEase = function (t) {
+            return t * t * t;
+        },
+        slideDuration = 1000;
+
+    // text options
+    var delay = {
+        before: 300,
+        between: 200,
+        after: 2500
+    };
+
+    // trends snapshot (can't think of a JS only way to load these dynamically)
+    function randomTrend() {
+        return trendsArray[Math.floor(trendsArray.length * Math.random())];
+    }
+
+    // colors
+    var colors = ['#ff3031', '#68ac0d', '#00a8da', '#fbc500'];
+
+    function randomColor() {
+        return colors[Math.floor(colors.length * Math.random())];
+    }
+
+    var Cell = function (x, y) {
+        // create the node
+        var node = document.createElement('div');
+        node.className = 'cell';
+        node.style.left = x * (100 / numCol) + '%';
+        node.style.top = y * (100 / numRow) + '%';
+        node.style.width = (100 / numCol) + '%';
+        node.style.height = (100 / numRow) + '%';
+        this.node = node;
+
+        // create and add the panes
+        var panes = [new Pane(this), new Pane(this)];
+        node.appendChild(panes[0].node);
+        node.appendChild(panes[1].node);
+        panes[0].setOtherNode(panes[1].node);
+        panes[1].setOtherNode(panes[0].node);
+
+        // handles sliding in next pane
+        var currentPane = 0;
+        this.nextPane = function () {
+            // swap z-indexes
+            panes[currentPane].node.style.zIndex = '-1';
+            currentPane = ++currentPane % 2;
+            panes[currentPane].node.style.zIndex = '1';
+            panes[currentPane].init();
+        }
+
+        // quickstart
+        panes[0].quickStart();
+        panes[0].node.style.zIndex = '1';
+    }
+
+    var Pane = function (cell) {
+        var otherNode;
+        this.setOtherNode = function (other) {
+            otherNode = other;
+        }
+
+        // create the node
+        var node = document.createElement('div');
+        node.className = 'pane';
+        this.node = node;
+
+        // a place to write the trends
+        var trend = document.createElement('a');
+        trend.className = 'trend';
+        trend.innerText = 'Bienvenido!';
+        node.appendChild(trend);
+
+        // (re-)initialize pane when sliding in
+        this.init = function () {
+            var dir = Math.floor(4 * Math.random());
+            switch (dir) {
+                case 0:
+                    slideStart = {left: 0, top: -100};
+                    break;
+                case 1:
+                    slideStart = {left: 100, top: 0};
+                    break;
+                case 2:
+                    slideStart = {left: 0, top: 100};
+                    break;
+                case 3:
+                    slideStart = {left: -100, top: 0};
+                    break;
+            }
+            // make sure it's a different background color
+            do
+                node.style.backgroundColor = randomColor();
+            while (node.style.backgroundColor == otherNode.style.backgroundColor);
+
+            var t = randomTrend();
+            if (t == null) {
+                trend.title = "No hay tendencias";
+                trend.href = "https://152728.apps.zdusercontent.com/152728/assets/1527604963-993d292bb70f823b21ce94d5db32898c/logo.png";
+                trend.innerHTML = '';
+            } else {
+                trend.title = t.keyword;
+                trend.href = t.url;
+                trend.innerHTML = '';
+            }
+
+            // start sliding in
+            slideValue = 0;
+            slideIn();
+        }
+
+        // handles sliding in
+        var slideStart,
+            slideValue;
+        var slideIn = function () {
+            slideValue += 20 / slideDuration;
+            if (slideValue >= 1) {
+                // end of sliding in
+                slideValue = 1;
+                setTimeout(nextChar, delay.before);
+            } else {
+                setTimeout(slideIn, 20);
+            }
+            node.style.left = slideEase(1 - slideValue) * slideStart.left + '%';
+            node.style.top = slideEase(1 - slideValue) * slideStart.top + '%';
+            // push other node away
+            otherNode.style.left =
+                (slideEase(1 - slideValue) - 1) * slideStart.left + '%';
+            otherNode.style.top =
+                (slideEase(1 - slideValue) - 1) * slideStart.top + '%';
+        }
+
+        // handles text
+        var nextChar = function () {
+            if (trend.innerHTML.length < trend.title.length) {
+                trend.innerHTML =
+                    trend.title.slice(0, trend.innerHTML.length + 1);
+                setTimeout(nextChar, delay.between);
+            } else {
+                setTimeout(cell.nextPane, delay.after);
+            }
+        }
+
+        // initial start
+        this.quickStart = function () {
+            node.style.backgroundColor = colors[3];
+            trend.title = randomTrend();
+            nextChar();
+        }
+    }
+
+    // create the cells
+    var cells = [];
+    for (var i = 0; i < (numCol * numRow); i++) {
+        cells[i] = new Cell(i % numCol, Math.floor(i / numCol));
+        console.log("cell" + cells[i]);
+        container.appendChild(cells[i].node);
+    }
+
+    // handles font size on resize
+    // quick and dirty, needs a fix
+    function calcFontsize() {
+        var fontSize = Math.min(
+            container.clientHeight / 18,
+            container.clientWidth / 46
+        );
+        fontSize = Math.floor(fontSize);
+        container.style.fontSize = fontSize + 'px';
+    }
+
+    calcFontsize();
+    window.onresize = calcFontsize;
+</script>
+</body>
+</html>
